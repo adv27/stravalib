@@ -217,10 +217,7 @@ class Gear(IdentifiableEntity):
         if v is None:
             return None
         if cls == Gear and v.get('resource_state') == 3:
-            if 'frame_type' in v:
-                o = Bike()
-            else:
-                o = Shoe()
+            o = Bike() if 'frame_type' in v else Shoe()
         else:
             o = cls()
         o.from_dict(v)
@@ -927,7 +924,7 @@ class Activity(LoadableEntity):
         with this activity.
         """
         if self._related is None:
-            if self.athlete_count - 1 > 0:
+            if self.athlete_count > 1:
                 self.assert_bind_client()
                 self._related = self.bind_client.get_related_activities(self.id)
             else:

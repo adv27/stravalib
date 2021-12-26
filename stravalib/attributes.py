@@ -53,10 +53,7 @@ class Attribute(object):
             return self
 
     def __set__(self, obj, val):
-        if val is not None:
-            self.data[obj] = self.unmarshal(val)
-        else:
-            self.data[obj] = None
+        self.data[obj] = self.unmarshal(val) if val is not None else None
 
     @property
     def type(self):
@@ -266,7 +263,7 @@ class ChoicesAttribute(Attribute):
             orig = [i for i in self.choices if self.choices[i] == v]
             if len(orig) == 1:
                 return orig[0]
-            elif len(orig) == 0:
+            elif not orig:
                 # No such choice
                 raise NotImplementedError("No such reverse choice {0} for field {1}.".format(v, self))
             else:
@@ -301,11 +298,11 @@ class EntityAttribute(Attribute):
 
     @property
     def type(self):
-        if self._lazytype:
-            clazz = getattr(stravalib.model, self._lazytype)
-        else:
-            clazz = self._type
-        return clazz
+        return (
+            getattr(stravalib.model, self._lazytype)
+            if self._lazytype
+            else self._type
+        )
 
     @type.setter
     def type(self, v):
@@ -344,16 +341,15 @@ class EntityAttribute(Attribute):
             if bind_client is not None and hasattr(o.__class__, 'bind_client'):
                 o.bind_client = bind_client
 
-            if isinstance(value, dict):
-                for (k, v) in value.items():
-                    if not hasattr(o.__class__, k):
-                        self.log.warning("Unable to set attribute {0} on entity {1!r}".format(k, o))
-                    else:
-                        #self.log.debug("Setting attribute {0} on entity {1!r}".format(k, o))
-                        setattr(o, k, v)
-                value = o
-            else:
+            if not isinstance(value, dict):
                 raise Exception("Unable to unmarshall object {0!r}".format(value))
+            for (k, v) in value.items():
+                if not hasattr(o.__class__, k):
+                    self.log.warning("Unable to set attribute {0} on entity {1!r}".format(k, o))
+                else:
+                    #self.log.debug("Setting attribute {0} on entity {1!r}".format(k, o))
+                    setattr(o, k, v)
+            value = o
         return value
 
 

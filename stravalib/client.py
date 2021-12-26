@@ -568,7 +568,7 @@ class Client(object):
         if isinstance(start_date_local, datetime):
             start_date_local = start_date_local.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-        if not activity_type.lower() in [t.lower() for t in model.Activity.TYPES]:
+        if activity_type.lower() not in [t.lower() for t in model.Activity.TYPES]:
             raise ValueError("Invalid activity type: {0}.  Possible values: {1!r}".format(activity_type, model.Activity.TYPES))
 
         params = dict(name=name, type=activity_type, start_date_local=start_date_local,
@@ -619,7 +619,9 @@ class Client(object):
             params['name'] = name
 
         if activity_type is not None:
-            if not activity_type.lower() in [t.lower() for t in model.Activity.TYPES]:
+            if activity_type.lower() not in [
+                t.lower() for t in model.Activity.TYPES
+            ]:
                 raise ValueError("Invalid activity type: {0}.  Possible values: {1!r}".format(activity_type, model.Activity.TYPES))
             params['type'] = activity_type
 
@@ -637,7 +639,7 @@ class Client(object):
 
         if description is not None:
             params['description'] = description
-            
+
         if device_name is not None:
             params['device_name'] = device_name
 
@@ -686,7 +688,7 @@ class Client(object):
                 raise TypeError("Invalid type specified for activity_file: {0}".format(type(activity_file)))
 
         valid_data_types = ('fit', 'fit.gz', 'tcx', 'tcx.gz', 'gpx', 'gpx.gz')
-        if not data_type in valid_data_types:
+        if data_type not in valid_data_types:
             raise ValueError("Invalid data type {0}. Possible values {1!r}".format(data_type, valid_data_types))
 
         params = {'data_type': data_type}
@@ -695,7 +697,9 @@ class Client(object):
         if description is not None:
             params['description'] = description
         if activity_type is not None:
-            if not activity_type.lower() in [t.lower() for t in model.Activity.TYPES]:
+            if activity_type.lower() not in [
+                t.lower() for t in model.Activity.TYPES
+            ]:
                 raise ValueError("Invalid activity type: {0}.  Possible values: {1!r}".format(activity_type, model.Activity.TYPES))
             params['activity_type'] = activity_type
         if private is not None:
@@ -1021,14 +1025,14 @@ class Client(object):
 
         valid_age_groups = ('0_24', '25_34', '35_44', '45_54', '55_64', '65_plus')
         if age_group is not None:
-            if not age_group in valid_age_groups:
+            if age_group not in valid_age_groups:
                 raise ValueError("Invalid age group: {0}.  Possible values: {1!r}".format(age_group, valid_age_groups))
             params['age_group'] = age_group
 
         valid_weight_classes = ('0_124', '125_149', '150_164', '165_179', '180_199', '200_plus',
                                 '0_54', '55_64', '65_74', '75_84', '85_94', '95_plus')
         if weight_class is not None:
-            if not weight_class in valid_weight_classes:
+            if weight_class not in valid_weight_classes:
                 raise ValueError("Invalid weight class: {0}.  Possible values: {1!r}".format(weight_class, valid_weight_classes))
             params['weight_class'] = weight_class
 
@@ -1040,7 +1044,7 @@ class Client(object):
 
         if timeframe is not None:
             valid_timeframes = 'this_year', 'this_month', 'this_week', 'today'
-            if not timeframe in valid_timeframes:
+            if timeframe not in valid_timeframes:
                 raise ValueError("Invalid timeframe: {0}.  Possible values: {1!r}".format(timeframe, valid_timeframes))
             params['date_range'] = timeframe
 
@@ -1531,8 +1535,7 @@ class Client(object):
         """
         callback = model.SubscriptionCallback.deserialize(raw)
         callback.validate(verify_token)
-        response_raw = {'hub.challenge': callback.hub_challenge}
-        return response_raw
+        return {'hub.challenge': callback.hub_challenge}
 
     def handle_subscription_update(self, raw):
         """
@@ -1618,11 +1621,7 @@ class BatchedResultsIterator(object):
         self.result_fetcher = result_fetcher
         self.limit = limit
 
-        if per_page is not None:
-            self.per_page = per_page
-        else:
-            self.per_page = self.default_per_page
-
+        self.per_page = per_page if per_page is not None else self.default_per_page
         self.reset()
 
     def __repr__(self):
@@ -1644,9 +1643,10 @@ class BatchedResultsIterator(object):
 
         raw_results = self.result_fetcher(page=self._page, per_page=self.per_page)
 
-        entities = []
-        for raw in raw_results:
-            entities.append(self.entity.deserialize(raw, bind_client=self.bind_client))
+        entities = [
+            self.entity.deserialize(raw, bind_client=self.bind_client)
+            for raw in raw_results
+        ]
 
         self._buffer = collections.deque(entities)
 

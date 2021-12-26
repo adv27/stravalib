@@ -38,11 +38,7 @@ class ApiV3(object):
         """
         self.log = logging.getLogger('{0.__module__}.{0.__name__}'.format(self.__class__))
         self.access_token = access_token
-        if requests_session:
-            self.rsession = requests_session
-        else:
-            self.rsession = requests.Session()
-
+        self.rsession = requests_session or requests.Session()
         if rate_limiter is None:
             # Make it a dummy function, so we don't have to check if it's defined before
             # calling it later
@@ -126,10 +122,12 @@ class ApiV3(object):
                                  params={'client_id': client_id, 'client_secret': client_secret, 'code': code,
                                  'grant_type': 'authorization_code'},
                                  method='POST')
-        access_info = dict()
-        access_info['access_token'] = response['access_token']
-        access_info['refresh_token'] = response['refresh_token']
-        access_info['expires_at'] = response['expires_at']
+        access_info = {
+            'access_token': response['access_token'],
+            'refresh_token': response['refresh_token'],
+            'expires_at': response['expires_at'],
+        }
+
         self.access_token = response['access_token']
 
         return access_info
@@ -156,10 +154,12 @@ class ApiV3(object):
                                  params={'client_id': client_id, 'client_secret': client_secret,
                                  'refresh_token': refresh_token, 'grant_type': 'refresh_token'},
                                  method='POST')
-        access_info = dict()
-        access_info['access_token'] = response['access_token']
-        access_info['refresh_token'] = response['refresh_token']
-        access_info['expires_at'] = response['expires_at']
+        access_info = {
+            'access_token': response['access_token'],
+            'refresh_token': response['refresh_token'],
+            'expires_at': response['expires_at'],
+        }
+
         self.access_token = response['access_token']
 
         return access_info
@@ -220,13 +220,7 @@ class ApiV3(object):
         if check_for_errors:
             self._handle_protocol_error(raw)
 
-        # 204 = No content
-        if raw.status_code in [204]:
-            resp = {}
-        else:
-            resp = raw.json()
-
-        return resp
+        return {} if raw.status_code in [204] else raw.json()
 
     def _handle_protocol_error(self, response):
         """
@@ -295,7 +289,7 @@ class ApiV3(object):
         """
         referenced = self._extract_referenced_vars(url)
         url = url.format(**kwargs)
-        params = dict([(k, v) for k, v in kwargs.items() if not k in referenced])
+        params = dict([(k, v) for k, v in kwargs.items() if k not in referenced])
         return self._request(url, params=params, check_for_errors=check_for_errors, use_webhook_server=use_webhook_server)
 
     def post(self, url, files=None, check_for_errors=True, use_webhook_server=False, **kwargs):
@@ -304,7 +298,7 @@ class ApiV3(object):
         """
         referenced = self._extract_referenced_vars(url)
         url = url.format(**kwargs)
-        params = dict([(k, v) for k, v in kwargs.items() if not k in referenced])
+        params = dict([(k, v) for k, v in kwargs.items() if k not in referenced])
         return self._request(url, params=params, files=files, method='POST', check_for_errors=check_for_errors, use_webhook_server=use_webhook_server)
 
     def put(self, url, check_for_errors=True, use_webhook_server=False, **kwargs):
@@ -313,7 +307,7 @@ class ApiV3(object):
         """
         referenced = self._extract_referenced_vars(url)
         url = url.format(**kwargs)
-        params = dict([(k, v) for k, v in kwargs.items() if not k in referenced])
+        params = dict([(k, v) for k, v in kwargs.items() if k not in referenced])
         return self._request(url, params=params, method='PUT', check_for_errors=check_for_errors, use_webhook_server=use_webhook_server)
 
     def delete(self, url, check_for_errors=True, use_webhook_server=False, **kwargs):
@@ -322,5 +316,5 @@ class ApiV3(object):
         """
         referenced = self._extract_referenced_vars(url)
         url = url.format(**kwargs)
-        params = dict([(k, v) for k, v in kwargs.items() if not k in referenced])
+        params = dict([(k, v) for k, v in kwargs.items() if k not in referenced])
         return self._request(url, params=params, method='DELETE', check_for_errors=check_for_errors, use_webhook_server=use_webhook_server)

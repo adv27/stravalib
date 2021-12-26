@@ -231,12 +231,11 @@ class RateLimitRule(object):
             if delta < self.timeframe:  # Has it been less than configured timeframe since oldest request?
                 if self.raise_exc:
                     raise exc.RateLimitExceeded("Rate limit exceeded (can try again in {0})".format(self.timeframe - delta))
-                else:
-                    # Wait the difference between timeframe and the oldest request.
-                    td = self.timeframe - delta
-                    sleeptime = hasattr(td, 'total_seconds') and td.total_seconds() or total_seconds(td)
-                    self.log.debug("Rate limit triggered; sleeping for {0}".format(sleeptime))
-                    time.sleep(sleeptime)
+                # Wait the difference between timeframe and the oldest request.
+                td = self.timeframe - delta
+                sleeptime = hasattr(td, 'total_seconds') and td.total_seconds() or total_seconds(td)
+                self.log.debug("Rate limit triggered; sleeping for {0}".format(sleeptime))
+                time.sleep(sleeptime)
         self.tab.append(datetime.now())
 
 
@@ -276,15 +275,27 @@ class DefaultRateLimiter(RateLimiter):
 
         super(DefaultRateLimiter, self).__init__()
 
-        self.rules.append(XRateLimitRule(
-            {'short': {'usageFieldIndex': 0, 'usage': 0,
-                         # 60s * 15 = 15 min
-                         'limit': 600, 'time': (60*15),
-                         'lastExceeded': None},
-             'long': {'usageFieldIndex': 1, 'usage': 0,
-                        # 60s * 60m * 24 = 1 day
-                        'limit': 30000, 'time': (60*60*24),
-                        'lastExceeded': None}}))
+        self.rules.append(
+            XRateLimitRule(
+                {
+                    'short': {
+                        'usageFieldIndex': 0,
+                        'usage': 0,
+                        # 60s * 15 = 15 min
+                        'limit': 600,
+                        'time': (60 * 15),
+                        'lastExceeded': None,
+                    },
+                    'long': {
+                        'usageFieldIndex': 1,
+                        'usage': 0,
+                        'limit': 30000,
+                        'time': 60 ** 2 * 24,
+                        'lastExceeded': None,
+                    },
+                }
+            )
+        )
 
         # XRateLimitRule used instead of timer based RateLimitRule
         # self.rules.append(RateLimitRule(requests=40, seconds=60, raise_exc=False))
